@@ -1,0 +1,38 @@
+- commands:
+  - "# Build and start the containers -- use the same project name so that"
+  - "# containers from other examples are removed"
+  - docker-compose --project-name splitgraph_example down -v --remove-orphans
+  - docker-compose --project-name splitgraph_example build
+  - docker-compose --project-name splitgraph_example up -d
+  record: False
+- commands:
+  - "# The .sgconfig file is written from the point of view of the client(sgr)."
+  - cat .sgconfig
+- commands:
+  - "# Initialize the remote engine"
+  - SG_ENGINE=engine_remote sgr init
+- commands:
+  - "# Ingest the weather dataset at Raleigh-Durham Airport from the CSV example"
+  - SG_ENGINE=engine_remote sgr init demo/weather
+  - |
+    SG_ENGINE=engine_remote sgr csv import -f rdu-weather-history.csv \
+                   -k date \
+                   -t date timestamp \
+                   --separator ";" \
+                   demo/weather rdu
+  - SG_ENGINE=engine_remote sgr commit demo/weather
+  - SG_ENGINE=engine_remote sgr tag demo/weather initial_data
+- commands:
+  - "# Inspect the dataset on the remote engine"
+  - SG_ENGINE=engine_remote sgr show demo/weather:latest
+- commands:
+    - "# Inspect the Splitfile used to create a derivative image"
+    - cat rdu-weather-summary.splitfile
+- commands:
+    - "# Run the Splitfile to build a new image"
+    - SG_ENGINE=engine_remote sgr build rdu-weather-summary.splitfile -o demo/summary
+    - SG_ENGINE=engine_remote sgr tag demo/summary based_on_initial
+- commands:
+  - "# Delete the docker-compose project and cleanup"
+  - docker-compose --project-name splitgraph_example down -v --remove-orphans
+  record: False
